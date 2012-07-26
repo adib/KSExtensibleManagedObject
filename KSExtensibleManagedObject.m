@@ -1,7 +1,7 @@
 //
 //  KSExtensibleManagedObject.m
 //
-//  Copyright (c) 2007-2011, Mike Abdullah and Karelia Software
+//  Copyright (c) 2007-2012 Mike Abdullah and Karelia Software
 //  All rights reserved.
 //  
 //  Redistribution and use in source and binary forms, with or without
@@ -48,12 +48,6 @@
 @implementation KSExtensibleManagedObject
 
 static BOOL sLogObservers = NO;
-
-#pragma mark Class Methods
-
-/*  In theory this is the same as NSManagedObject's implementation. But in practice (and maybe this was only on 10.4) I found it would sometimes return YES for unmodelled properties.
- */
-+ (BOOL)automaticallyNotifiesObserversForKey:(NSString *)key { return NO; }
 
 #pragma mark Extensible Properties
 
