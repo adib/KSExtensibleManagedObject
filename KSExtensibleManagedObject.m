@@ -1,28 +1,26 @@
 //
 //  KSExtensibleManagedObject.m
 //
-//  Copyright (c) 2007-2012 Mike Abdullah and Karelia Software
-//  All rights reserved.
-//  
-//  Redistribution and use in source and binary forms, with or without
-//  modification, are permitted provided that the following conditions are met:
-//      * Redistributions of source code must retain the above copyright
-//        notice, this list of conditions and the following disclaimer.
-//      * Redistributions in binary form must reproduce the above copyright
-//        notice, this list of conditions and the following disclaimer in the
-//        documentation and/or other materials provided with the distribution.
-//  
-//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-//  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-//  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//  DISCLAIMED. IN NO EVENT SHALL MIKE ABDULLAH OR KARELIA SOFTWARE BE LIABLE FOR ANY
-//  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-//  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-//   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-//  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-//  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-//  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//  Created by Mike Abdullah
+//  Copyright © 2007 Karelia Software
 //
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to deal
+//  in the Software without restriction, including without limitation the rights
+//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//  copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+//  THE SOFTWARE.
 //
 //	A special kind of managed object that allows you to use -valueForKey: and
 //	-setValueForKey: using any key. If the object does not normally accept this
@@ -96,12 +94,21 @@ static BOOL sLogObservers = NO;
 	// Fault in the properties on-demand
 	if (!_extensibleProperties)
 	{
-		_extensibleProperties = [[self archivedExtensibleProperties] mutableCopy];
-		
-		if (!_extensibleProperties)
-		{
-			_extensibleProperties = [[NSMutableDictionary alloc] init];
-		}
+        @try {
+            _extensibleProperties = [[NSMutableDictionary alloc] initWithDictionary:self.archivedExtensibleProperties];
+            NSAssert(_extensibleProperties, @"-initWithDictionary: let me down");
+        }
+        @catch (NSException *exception) {
+            // Catch and handle the exception by resetting properties to be empty. But then rethrow
+            // the exception since the reset is only desirable if client code catches the exception
+            // itself and chooses to proceed.
+            if ([exception.name isEqualToString:NSInconsistentArchiveException]) {
+                NSLog(@"Resetting extensible properties after failure to unarchive: %@", self);
+                _extensibleProperties = [[NSMutableDictionary alloc] init];
+            }
+
+            @throw exception;
+        }
 	}
 	
 	return _extensibleProperties;
@@ -253,6 +260,8 @@ static BOOL sLogObservers = NO;
     }
 }
 
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
+
 /*	Whenever a change to our dictionary data is made due to an undo or redo, match the changes to
  *	our in-memory dictionary. Only needs to be done on 10.5, as 10.6 offers a proper API.
  */
@@ -275,6 +284,8 @@ static BOOL sLogObservers = NO;
 	// earlier -willChangeValueForKey: that must have ocurred.
 	[super didChangeValueForKey:key];
 }
+
+#endif
 
 /*	Throw away our internal dictionary just like normal Core Data faulting behavior.
  */
